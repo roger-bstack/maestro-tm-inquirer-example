@@ -38,7 +38,7 @@ You will be prompted for the following information:
 1. **Execution type** – Choose **Locally** to run the Maestro test suite on your machine, or **On BrowserStack** to run it in the cloud.
 2. **Maestro test directory** – Path to the folder containing your Maestro `.yaml` files.
 3. **App path** – Path to the `.apk` (Android) or `.ipa` (iOS) file you want to test.
-4. **Device** – Device name (e.g., `iPhone 13`, `Samsung Galaxy S21`). The CLI will parse the device name and OS version.
+4. **Device** – Device name AND OS VERSION hyphenated (e.g., `iPhone 13-15`, `Samsung Galaxy S21-12.0`). The CLI will parse the device name and OS version.
 5. **BrowserStack project name** – Name of the project in BrowserStack Test Management.
 6. **BrowserStack project ID** – Numeric ID of the BrowserStack project.
 
@@ -86,5 +86,3 @@ export BROWSERSTACK_ACCESS_KEY=your_access_key
 ISC
 
 ---
-
-*Generated automatically from the source code and package metadata.*
