@@ -1,0 +1,11 @@
+appId: org.wikipedia.alpha
+name: '[TC-843] Calculator'
+---
+- openLink:
+    link: https://calculator.net
+    browser: true
+- tapOn: "7"
+- tapOn: +
+- tapOn: "3"
+- tapOn: =
+- takeScreenshot: CalculatorResult

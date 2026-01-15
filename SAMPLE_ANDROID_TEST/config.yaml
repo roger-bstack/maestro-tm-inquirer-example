@@ -1,0 +1,5 @@
+flows:
+  - "subflows/*"
+  - "master.yml"
+executionOrder:
+  continueOnFailure: true # default is true

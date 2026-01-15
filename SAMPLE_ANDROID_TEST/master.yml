@@ -1,0 +1,5 @@
+appId: org.wikipedia.alpha
+name: '[TC-842] flow 0'
+---
+- runFlow:
+    file: subflows/wikipediaAppTest.yml

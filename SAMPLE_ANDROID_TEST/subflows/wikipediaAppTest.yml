@@ -1,0 +1,48 @@
+appId: org.wikipedia.alpha
+name: '[TC-844] Wikipedia'
+---
+- startRecording: recording
+- launchApp:
+      permissions:
+          all: allow
+- waitForAnimationToEnd:
+      timeout: 5000
+- tapOn:
+      id: android:id/button1
+      optional: true
+- tapOn:
+      text: "Search Wikipedia"
+      index: 2
+      repeat: 2
+      delay: 0
+- inputText: BrowserStack
+- eraseText: 5 # Removes up to 100 characters
+- inputText: Stack
+- scrollUntilVisible:
+      element:
+          id: "org.wikipedia.alpha:id/page_list_item_title" # or any other selector
+      direction: DOWN # DOWN|UP|LEFT|RIGHT (optional, default: DOWN)
+      timeout: 50000 # (optional, default: 20000) ms
+      speed: 40 # 0-100 (optional, default: 40) Scroll speed. Higher values scroll faster.
+      visibilityPercentage: 100 # 0-100 (optional, default: 100) Percentage of element visible in viewport
+- takeScreenshot:
+      path: BrowserStackScreen # screenshot will be stored as LoginScreen.png
+- tapOn:
+      id: "org.wikipedia.alpha:id/page_list_item_title"
+      index: 0
+- assertVisible:
+      id: "org.wikipedia.alpha:id/view_wiki_error_button"
+      enabled: true
+      optional: true
+- copyTextFrom:
+      id: "org.wikipedia.alpha:id/view_wiki_error_button"
+      optional: true
+- back
+- tapOn:
+      text: "Search Wikipedia"
+      index: 2
+- pasteText
+- back
+- inputText: ${output.testrequest = http.get('https://example.com')}
+- openLink:
+      link: https://example.com
