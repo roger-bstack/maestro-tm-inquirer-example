@@ -7,6 +7,7 @@ import { exec } from 'child_process';
 import FormData from 'form-data';
 import yaml from 'js-yaml';
 
+const BROWSERSTACK_CLOUD_API_BASE = 'https://api-cloud.browserstack.com';
 const BROWSERSTACK_API_BASE = 'https://api.browserstack.com';
 const BROWSERSTACK_TM_API_BASE = 'https://test-management.browserstack.com';
 const BROWSERSTACK_USERNAME = process.env.BROWSERSTACK_USERNAME;
@@ -21,7 +22,7 @@ async function uploadAppToBrowserStack(appPath) {
     form.append('file', fs.createReadStream(appPath));
 
     const response = await axios.post(
-      `${BROWSERSTACK_API_BASE}/app-automate/maestro/v2/app`,
+      `${BROWSERSTACK_CLOUD_API_BASE}/app-automate/maestro/v2/app`,
       form,
       {
         headers: form.getHeaders(),
@@ -88,7 +89,7 @@ async function uploadTestSuiteToBrowserStack(zipFilePath) {
     form.append('file', fs.createReadStream(zipFilePath));
 
     const response = await axios.post(
-      `${BROWSERSTACK_API_BASE}/app-automate/maestro/v2/test-suite`,
+      `${BROWSERSTACK_CLOUD_API_BASE}/app-automate/maestro/v2/test-suite`,
       form,
       {
         headers: form.getHeaders(),
@@ -154,8 +155,6 @@ async function getOrCreateConfiguration(deviceName, osVersion, os, geoLocation) 
       // Find matching configuration
       const existing = pageConfigs.find(
         (c) =>
-          // c.device?.toLowerCase() === deviceName.toLowerCase() &&
-          // c.os_version?.toString() === osVersion &&
           c.name?.toString() === configName
       );
       if (existing) {
@@ -200,24 +199,29 @@ async function getOrCreateConfiguration(deviceName, osVersion, os, geoLocation) 
 /**
  * Execute a Maestro build on BrowserStack.
  */
-async function executeMaestroBuildOnBrowserStack(appUrl, testSuiteUrl, devices, projectId) {
+async function executeMaestroBuildOnBrowserStack(appUrl, testSuiteUrl, devices, os, projectId) {
   try {
     const projectDetails = await getProjectDetails(projectId);
     const projectName = projectDetails.name;
-    console.log(`Executing Maestro build on BrowserStack for project: ${projectName}`);
+    console.log(`Executing Maestro build on BrowserStack for project: ${projectName} (${projectId})`);
+
+    const buildUrl = `${BROWSERSTACK_CLOUD_API_BASE}/app-automate/maestro/v2/${os.toLowerCase()}/build`;
+    const buildPayload = {
+      app: appUrl,
+      testSuite: testSuiteUrl,
+      devices: devices,
+      project: projectName,
+      debug: "true",
+      networkLogs: "true",
+      deviceLogs: "true",
+      video: "true"
+    };
 
     const response = await axios.post(
-      `${BROWSERSTACK_API_BASE}/app-automate/maestro/v2/android/build`,
+      buildUrl,
+      buildPayload,
       {
-        app: appUrl,
-        testSuite: testSuiteUrl,
-        devices: devices,
-        project: 'RJ_Maestro_Tests',
-        debug: "true",
-        networkLogs: "true",
-        deviceLogs: "true",
-      },
-      {
+        headers: { 'Content-Type': 'application/json' },
         auth: {
           username: BROWSERSTACK_USERNAME,
           password: BROWSERSTACK_ACCESS_KEY,
@@ -240,7 +244,7 @@ async function pollBuildStatus(buildId, timeout = 30 * 60 * 1000) {
   while (Date.now() - startTime < timeout) {
     try {
       const response = await axios.get(
-        `${BROWSERSTACK_API_BASE}/app-automate/maestro/v2/builds/${buildId}`,
+        `${BROWSERSTACK_CLOUD_API_BASE}/app-automate/maestro/v2/builds/${buildId}`,
         {
           auth: {
             username: BROWSERSTACK_USERNAME,
@@ -348,10 +352,9 @@ async function createTestRunWithLinkedRequirements(testCaseId, projectId, maestr
       `${BROWSERSTACK_TM_API_BASE}/api/v2/projects/${projectId}/test-runs`,
       {
         test_run: {
-          name: `Test Run for: ${maestroFlowName}`,
+          name: `Maestro Test Run: ${maestroFlowName}`,
           description: `Automated test run for Maestro flow: ${maestroFlowName}`,
           run_state: 'new_run',
-          assignee: 'test.assignee@example.com', // TODO: replace with real assignee
           test_cases: [testCaseId],
           issues: linkedIssues,
           issue_tracker: issueTracker,
@@ -448,7 +451,6 @@ async function main() {
 
     const [deviceName, osVersion] = answers.device.split('-').map(s => s.trim());
 
-
     const flowNames = await getMaestroFlowNames(answers.maestroTestDir);
     console.log('Discovered Maestro flow names:', flowNames);
 
@@ -527,13 +529,13 @@ async function main() {
         const testRun = await createTestRunWithLinkedRequirements(testCaseId, answers.projectId, maestroFlowName, configurationId);
         console.log('Test run created:', testRun);
 
-        const buildExecution = await executeMaestroBuildOnBrowserStack(appUrl, testSuiteUrl, [answers.device], answers.projectId);
+        const buildExecution = await executeMaestroBuildOnBrowserStack(appUrl, testSuiteUrl, [answers.device], os, answers.projectId);
         console.log('Build execution started:', buildExecution);
 
         const buildStatus = await pollBuildStatus(buildExecution.build_id);
         console.log('Final build status:', buildStatus);
 
-        const testResultStatus = buildStatus.status === 'passed' ? 'passed' : 'failed';
+        const testResultStatus = buildStatus.status;
         await addTestResultToBrowserStack(answers.projectId, testCaseId, testRun.test_run.identifier, testResultStatus, linkedIssues, configurationId);
 
         await closeTestRunOnBrowserStack(answers.projectId, testRun.test_run.identifier);

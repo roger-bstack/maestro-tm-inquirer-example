@@ -1,0 +1,13 @@
+appId: com.browserstack.Sample-iOS
+name: '[TC-842] sample flow'
+tags:
+  - ios
+  - passing
+---
+- launchApp
+- takeScreenshot: MainScreen1 # screenshot will be stored as MainScreen.png
+- tapOn:
+    id: "Text Button"
+- tapOn:
+    id: "Text Input"
+- inputText: "hello@browserstack.com"
